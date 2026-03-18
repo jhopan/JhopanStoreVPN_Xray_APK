@@ -15,8 +15,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       LIBXRAY_AAR_URL: https://github.com/jhopan/JhopanStoreVPN_Xray_APK/releases/download/binary-assets/libXray.aar
-      TUN2SOCKS_ARM64_URL: https://github.com/jhopan/JhopanStoreVPN_Xray_APK/releases/download/binary-assets/libtun2socks-arm64-v8a.so
-      TUN2SOCKS_ARMV7_URL: https://github.com/jhopan/JhopanStoreVPN_Xray_APK/releases/download/binary-assets/libtun2socks-armeabi-v7a.so
 
     steps:
       - name: Checkout
