@@ -1,0 +1,74 @@
+name: Android Multi ABI Build
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Grant gradlew execute permission
+        run: chmod +x ./gradlew
+
+      - name: Build phone release
+        run: ./gradlew assemblePhoneRelease
+
+      - name: Build full release
+        run: ./gradlew assembleFullRelease
+
+      - name: Upload v8a (arm64-v8a)
+        uses: actions/upload-artifact@v4
+        with:
+          name: v8a-arm64-v8a
+          path: app/build/outputs/apk/phone/release/app-phone-arm64-v8a-release.apk
+          if-no-files-found: error
+
+      - name: Upload v7 (armeabi-v7a)
+        uses: actions/upload-artifact@v4
+        with:
+          name: v7-arm-armeabi-v7a
+          path: app/build/outputs/apk/phone/release/app-phone-armeabi-v7a-release.apk
+          if-no-files-found: error
+
+      - name: Upload amd (x86_64)
+        uses: actions/upload-artifact@v4
+        with:
+          name: amd-x86_64
+          path: app/build/outputs/apk/full/release/app-full-x86_64-release.apk
+          if-no-files-found: error
+
+      - name: Upload universal (all ABIs)
+        uses: actions/upload-artifact@v4
+        with:
+          name: universal-all-abis
+          path: app/build/outputs/apk/full/release/app-full-universal-release.apk
+          if-no-files-found: error
+
+      - name: Upload universal android (phone universal)
+        uses: actions/upload-artifact@v4
+        with:
+          name: universal-android-phone
+          path: app/build/outputs/apk/phone/release/app-phone-universal-release.apk
+          if-no-files-found: error
+
+      - name: Upload x86 (optional legacy)
+        uses: actions/upload-artifact@v4
+        with:
+          name: arm-x86-legacy
+          path: app/build/outputs/apk/full/release/app-full-x86-release.apk
+          if-no-files-found: ignore
