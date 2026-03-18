@@ -7,9 +7,34 @@ on:
       - 'v*'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
-  build-android:
+  seed-binary-assets:
     runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Publish binary assets once (lib + tun2socks)
+        if: ${{ hashFiles('app/libs/libXray.aar') != '' }}
+        uses: ncipollo/release-action@v1
+        with:
+          tag: binary-assets
+          name: Binary Assets
+          body: |
+            One-time binary dependencies used by CI and local build.
+          allowUpdates: false
+          skipIfReleaseExists: true
+          artifacts: app/libs/libXray.aar,app/src/main/jniLibs/arm64-v8a/libtun2socks.so,app/src/main/jniLibs/armeabi-v7a/libtun2socks.so
+
+  build-android:
+    needs: seed-binary-assets
+    runs-on: ubuntu-latest
+    env:
+      LIBXRAY_AAR_URL: https://github.com/jhopan/JhopanStoreVPN_Xray_APK/releases/download/binary-assets/libXray.aar
 
     steps:
       - name: Checkout
@@ -72,3 +97,22 @@ jobs:
           name: arm-x86-legacy
           path: app/build/outputs/apk/full/release/app-full-x86-release.apk
           if-no-files-found: ignore
+
+      - name: Upload libXray used in build
+        uses: actions/upload-artifact@v4
+        with:
+          name: libxray-aar
+          path: app/libs/libXray.aar
+          if-no-files-found: error
+
+      - name: Publish tagged release assets (APK + lib)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            app/build/outputs/apk/phone/release/app-phone-arm64-v8a-release.apk
+            app/build/outputs/apk/phone/release/app-phone-armeabi-v7a-release.apk
+            app/build/outputs/apk/phone/release/app-phone-universal-release.apk
+            app/build/outputs/apk/full/release/app-full-x86_64-release.apk
+            app/build/outputs/apk/full/release/app-full-universal-release.apk
+            app/libs/libXray.aar
