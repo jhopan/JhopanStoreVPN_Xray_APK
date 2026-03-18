@@ -11,30 +11,12 @@ permissions:
   contents: write
 
 jobs:
-  seed-binary-assets:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Publish binary assets once (lib + tun2socks)
-        if: ${{ hashFiles('app/libs/libXray.aar') != '' }}
-        uses: ncipollo/release-action@v1
-        with:
-          tag: binary-assets
-          name: Binary Assets
-          body: |
-            One-time binary dependencies used by CI and local build.
-          allowUpdates: false
-          skipIfReleaseExists: true
-          artifacts: app/libs/libXray.aar,app/src/main/jniLibs/arm64-v8a/libtun2socks.so,app/src/main/jniLibs/armeabi-v7a/libtun2socks.so
-
   build-android:
-    needs: seed-binary-assets
     runs-on: ubuntu-latest
     env:
       LIBXRAY_AAR_URL: https://github.com/jhopan/JhopanStoreVPN_Xray_APK/releases/download/binary-assets/libXray.aar
+      TUN2SOCKS_ARM64_URL: https://github.com/jhopan/JhopanStoreVPN_Xray_APK/releases/download/binary-assets/libtun2socks-arm64-v8a.so
+      TUN2SOCKS_ARMV7_URL: https://github.com/jhopan/JhopanStoreVPN_Xray_APK/releases/download/binary-assets/libtun2socks-armeabi-v7a.so
 
     steps:
       - name: Checkout
@@ -59,60 +41,71 @@ jobs:
       - name: Upload v8a (arm64-v8a)
         uses: actions/upload-artifact@v4
         with:
-          name: v8a-arm64-v8a
+          name: JhopanStoreVPN-v8a-arm64-v8a
           path: app/build/outputs/apk/phone/release/app-phone-arm64-v8a-release.apk
           if-no-files-found: error
 
       - name: Upload v7 (armeabi-v7a)
         uses: actions/upload-artifact@v4
         with:
-          name: v7-arm-armeabi-v7a
+          name: JhopanStoreVPN-v7-armeabi-v7a
           path: app/build/outputs/apk/phone/release/app-phone-armeabi-v7a-release.apk
           if-no-files-found: error
 
       - name: Upload amd (x86_64)
         uses: actions/upload-artifact@v4
         with:
-          name: amd-x86_64
+          name: JhopanStoreVPN-amd-x86_64
           path: app/build/outputs/apk/full/release/app-full-x86_64-release.apk
           if-no-files-found: error
 
       - name: Upload universal (all ABIs)
         uses: actions/upload-artifact@v4
         with:
-          name: universal-all-abis
+          name: JhopanStoreVPN-universal-all-abis
           path: app/build/outputs/apk/full/release/app-full-universal-release.apk
           if-no-files-found: error
 
       - name: Upload universal android (phone universal)
         uses: actions/upload-artifact@v4
         with:
-          name: universal-android-phone
+          name: JhopanStoreVPN-universal-android-phone
           path: app/build/outputs/apk/phone/release/app-phone-universal-release.apk
           if-no-files-found: error
 
       - name: Upload x86 (optional legacy)
         uses: actions/upload-artifact@v4
         with:
-          name: arm-x86-legacy
+          name: JhopanStoreVPN-x86-legacy
           path: app/build/outputs/apk/full/release/app-full-x86-release.apk
           if-no-files-found: ignore
 
       - name: Upload libXray used in build
         uses: actions/upload-artifact@v4
         with:
-          name: libxray-aar
+          name: JhopanStoreVPN-libXray-aar
           path: app/libs/libXray.aar
           if-no-files-found: error
+
+      - name: Prepare release filenames (JhopanStoreVPN)
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          mkdir -p dist/release
+          cp app/build/outputs/apk/phone/release/app-phone-arm64-v8a-release.apk dist/release/JhopanStoreVPN-phone-arm64-v8a-release.apk
+          cp app/build/outputs/apk/phone/release/app-phone-armeabi-v7a-release.apk dist/release/JhopanStoreVPN-phone-armeabi-v7a-release.apk
+          cp app/build/outputs/apk/phone/release/app-phone-universal-release.apk dist/release/JhopanStoreVPN-phone-universal-release.apk
+          cp app/build/outputs/apk/full/release/app-full-x86_64-release.apk dist/release/JhopanStoreVPN-full-x86_64-release.apk
+          cp app/build/outputs/apk/full/release/app-full-universal-release.apk dist/release/JhopanStoreVPN-full-universal-release.apk
+          cp app/libs/libXray.aar dist/release/JhopanStoreVPN-libXray.aar
 
       - name: Publish tagged release assets (APK + lib)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            app/build/outputs/apk/phone/release/app-phone-arm64-v8a-release.apk
-            app/build/outputs/apk/phone/release/app-phone-armeabi-v7a-release.apk
-            app/build/outputs/apk/phone/release/app-phone-universal-release.apk
-            app/build/outputs/apk/full/release/app-full-x86_64-release.apk
-            app/build/outputs/apk/full/release/app-full-universal-release.apk
-            app/libs/libXray.aar
+            dist/release/JhopanStoreVPN-phone-arm64-v8a-release.apk
+            dist/release/JhopanStoreVPN-phone-armeabi-v7a-release.apk
+            dist/release/JhopanStoreVPN-phone-universal-release.apk
+            dist/release/JhopanStoreVPN-full-x86_64-release.apk
+            dist/release/JhopanStoreVPN-full-universal-release.apk
+            dist/release/JhopanStoreVPN-libXray.aar
